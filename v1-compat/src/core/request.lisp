@@ -181,12 +181,13 @@ on an original raw-body."
 
       (setf (getf env :raw-body) (slot-value req 'raw-body))
       ;; POST parameters
-      (unless (or (null (content-type req))
-                  (slot-boundp req 'body-parameters))
-        (setf (slot-value req 'body-parameters)
-              (parse (content-type req) (content-length req) (raw-body req)))
-        (file-position (raw-body req) 0)
-        (rplacd (last env) (list :body-parameters (slot-value req 'body-parameters)))))
+      (if (null (content-type req))
+          (setf (slot-value req 'body-parameters) nil)
+          (unless  (slot-boundp req 'body-parameters)
+            (setf (slot-value req 'body-parameters)
+                  (parse (content-type req) (content-length req) (raw-body req)))
+            (file-position (raw-body req) 0)
+            (rplacd (last env) (list :body-parameters (slot-value req 'body-parameters))))))
 
     req))
 
@@ -238,7 +239,10 @@ on an original raw-body."
 
 (defun get-whole-or-specified (req key &optional name)
   (check-type req <request>)
-  (let ((params (slot-value req key)))
-    (if name
-        (assoc-value-multi name params)
-        params)))
+  (handler-case
+      (let ((params (slot-value req key)))
+        (if name
+            (assoc-value-multi name params)
+            params))
+    (unbound-slot ()
+      nil)))
