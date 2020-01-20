@@ -238,7 +238,9 @@ on an original raw-body."
 
 (defun get-whole-or-specified (req key &optional name)
   (check-type req <request>)
-  (let ((params (slot-value req key)))
-    (if name
-        (assoc-value-multi name params)
-        params)))
+  (if (slot-boundp req key)
+      (let ((params (slot-value req key)))
+        (if name
+            (assoc-value-multi name params)
+            params))
+      nil))
